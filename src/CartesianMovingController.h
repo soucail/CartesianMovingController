@@ -1,7 +1,10 @@
 #pragma once
 
+#include <SpaceVecAlg/EigenTypedef.h>
+#include <SpaceVecAlg/SpaceVecAlg>
 #include <mc_control/mc_controller.h>
-
+#include <mc_tasks/EndEffectorTask.h>
+#include <memory>
 
 #include "api.h"
 
@@ -12,4 +15,15 @@ struct CartesianMovingController_DLLAPI CartesianMovingController : public mc_co
   bool run() override;
 
   void reset(const mc_control::ControllerResetData & reset_data) override;
+
+  void switch_target();
+
+  std::shared_ptr<mc_tasks::EndEffectorTask> leftandrightTask;  
+
+private:
+  mc_rtc::Configuration config_;
+  bool goingLeft = true;
+  sva::PTransformd leftandrightTarget;
+
 };
+

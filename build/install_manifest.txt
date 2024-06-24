@@ -1,0 +1,2 @@
+/home/soucsouc/devel/install/lib/mc_controller/etc/CartesianMovingController.yaml
+/home/soucsouc/devel/install/lib/mc_controller/CartesianMovingController.so
