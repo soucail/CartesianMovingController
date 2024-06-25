@@ -2,32 +2,46 @@
 #include <SpaceVecAlg/PTransform.h>
 #include <mc_rbdyn/RobotLoader.h>
 #include <mc_tasks/EndEffectorTask.h>
+#include <mc_tasks/PostureTask.h>
+#include <mc_tasks/OrientationTask.h>
+
 
 CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm, double dt, const mc_rtc::Configuration & config)
 : mc_control::MCController(rm, dt, config, Backend::TVM)
 {
+  start_moving_ = false;
   dynamicsConstraint = mc_rtc::unique_ptr<mc_solver::DynamicsConstraint>(new mc_solver::DynamicsConstraint(robots(), 0, solver().dt(), {0.1, 0.01, 0.5}, 0.9, false, true));
   config_.load(config);
   solver().addConstraintSet(contactConstraint);
   solver().addConstraintSet(dynamicsConstraint);
 
-  // leftandrightTarget = {{"orientation", {0.71, 0, 0.71, 0}}, {"position", {0.4, 0.4, 1.0}}};
+  postureTask = std::make_shared<mc_tasks::PostureTask>(solver(), robot().robotIndex(), 1, 1);
+  postureTask->stiffness(1);
+  postureTask->damping(5);
+  solver().addTask(postureTask);
 
 
-  leftandrightTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 3.0, 3);
-  // leftandrightTask->reset();
-  // leftandrightTask->set_ef_pose(leftandrightTarget);
-  leftandrightTask->positionTask->position(Eigen::Vector3d(0.3, 0.3, 0.3));
+  leftandrightTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 10.0, 500);
+  Eigen::VectorXd dimweight(6); 
+  dimweight << 1., 1., 1., 1., 1., 1. ; 
+  leftandrightTask -> dimWeight(dimweight);
+  leftandrightTask->reset();
+  // leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, 0.0, 0.4));
 
   solver().addTask(leftandrightTask);
 
   datastore().make<std::string>("ControlMode", "Torque"); // entree dans le datastore
+  datastore().make_call("getPostureTask", [this]() -> mc_tasks::PostureTaskPtr { return postureTask; });
 
   gui()->addElement(this, {"Control Mode"},
                     mc_rtc::gui::Label("Current Control :", [this]() { return this->datastore().get<std::string>("ControlMode"); }),
                     mc_rtc::gui::Button("Position", [this]() { datastore().assign<std::string>("ControlMode", "Position"); }),
                     mc_rtc::gui::Button("Torque", [this]() { datastore().assign<std::string>("ControlMode", "Torque"); }));
-  
+
+  gui()->addElement({"Tasks"},
+    mc_rtc::gui::Checkbox("Moving from left to right", this->start_moving_)
+  );
+
   logger().addLogEntry("ControlMode",
                        [this]()
                        {
@@ -44,7 +58,7 @@ CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm
 
 bool CartesianMovingController::run()
 { 
-  if(leftandrightTask->eval().norm() < 0.01) { switch_target(); }
+  if(leftandrightTask->eval().norm() < 0.02) { switch_target(); }
 
   auto ctrl_mode = datastore().get<std::string>("ControlMode");
 
@@ -66,10 +80,14 @@ void CartesianMovingController::reset(const mc_control::ControllerResetData & re
 
 void CartesianMovingController::switch_target()
 {
-  // leftandrightTask->reset();
-  if (goingLeft){leftandrightTask->positionTask->position(Eigen::Vector3d(0.3, 0.3, 0.3));}
-  else {leftandrightTask->positionTask->position(Eigen::Vector3d(0.2, 0.3, 0.3));}
+  if (start_moving_) {
+  /// leftandrightTask->reset();
+  if (goingLeft){leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, 0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(1, 4, 1, 4).normalized().toRotationMatrix());
+;}
+  else {leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, -0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(-1, 4, 1, 4).normalized().toRotationMatrix());
+;}
   goingLeft = !goingLeft;
+  }
 }
 
 CONTROLLER_CONSTRUCTOR("CartesianMovingController", CartesianMovingController)
