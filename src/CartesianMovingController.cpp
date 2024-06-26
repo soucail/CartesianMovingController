@@ -15,18 +15,17 @@ CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm
   solver().addConstraintSet(contactConstraint);
   solver().addConstraintSet(dynamicsConstraint);
 
-  postureTask = std::make_shared<mc_tasks::PostureTask>(solver(), robot().robotIndex(), 1, 1);
-  postureTask->stiffness(1);
-  postureTask->damping(5);
+  postureTask = std::make_shared<mc_tasks::PostureTask>(solver(), robot().robotIndex(), 5, 1);
+  // postureTask->stiffness(1);
+  // postureTask->damping(5);
   solver().addTask(postureTask);
 
 
-  leftandrightTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 10.0, 500);
+  leftandrightTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 20.0, 500);
   Eigen::VectorXd dimweight(6); 
   dimweight << 1., 1., 1., 1., 1., 1. ; 
   leftandrightTask -> dimWeight(dimweight);
   leftandrightTask->reset();
-  // leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, 0.0, 0.4));
 
   solver().addTask(leftandrightTask);
 
@@ -81,11 +80,8 @@ void CartesianMovingController::reset(const mc_control::ControllerResetData & re
 void CartesianMovingController::switch_target()
 {
   if (start_moving_) {
-  /// leftandrightTask->reset();
-  if (goingLeft){leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, 0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(1, 4, 1, 4).normalized().toRotationMatrix());
-;}
-  else {leftandrightTask->positionTask->position(Eigen::Vector3d(0.4, -0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(-1, 4, 1, 4).normalized().toRotationMatrix());
-;}
+  if (goingLeft){leftandrightTask->positionTask->position(Eigen::Vector3d(0.55, 0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(0, 1, 0, 1).normalized().toRotationMatrix());}
+  else {leftandrightTask->positionTask->position(Eigen::Vector3d(0.55, -0.2, 0.4)),leftandrightTask->orientationTask->orientation(Eigen::Quaterniond(0, 1, 0, 1).normalized().toRotationMatrix());}
   goingLeft = !goingLeft;
   }
 }
