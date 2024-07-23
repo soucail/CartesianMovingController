@@ -18,16 +18,15 @@ struct CartesianMovingController_DLLAPI CartesianMovingController : public mc_co
 
   void reset(const mc_control::ControllerResetData & reset_data) override;
 
-  void switch_target();
-
-  std::shared_ptr<mc_tasks::EndEffectorTask> leftandrightTask;  
+  std::shared_ptr<mc_tasks::EndEffectorTask> circularTask;  
   std::shared_ptr<mc_tasks::PostureTask> postureTask;
 
 
 private:
   mc_rtc::Configuration config_;
-  bool goingLeft = true;
-  sva::PTransformd leftandrightTarget;
   bool start_moving_;
+  bool init_;
+  double ctlTime_;
+  double omega_;
+  double R_;
 };
-
