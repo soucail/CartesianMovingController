@@ -29,7 +29,7 @@ CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm
   solver().addTask(postureTask);
 
 
-  circularTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 20.0, 500);
+  circularTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 20.0, 10000);
   Eigen::VectorXd dimweight(6); 
   dimweight << 1., 1., 1., 1., 1., 1. ; 
   circularTask -> dimWeight(dimweight);
@@ -67,7 +67,7 @@ bool CartesianMovingController::run()
 { 
   ctlTime_ += timeStep;
   if (ctlTime_ > 3) {init_=true; datastore().assign<std::string>("ControlMode", "Torque");}
-  if (ctlTime_ > 7.2) {start_moving_=true;}
+  if (ctlTime_ > 7.2) {start_moving_=true; postureTask->stiffness(0); postureTask->damping(5);}
   if (start_moving_ && init_) { 
     circularTask->positionTask->position(Eigen::Vector3d(0.55, R_*std::sin(omega_*ctlTime_), 0.4 + R_*std::cos(omega_*ctlTime_))),
     circularTask->positionTask->refVel(Eigen::Vector3d(0, R_*omega_*std::cos(omega_*ctlTime_), -R_*omega_*std::sin(omega_*ctlTime_))),
