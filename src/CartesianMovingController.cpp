@@ -19,17 +19,17 @@ CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm
   solver().addConstraintSet(contactConstraint);
   solver().addConstraintSet(dynamicsConstraint);
 
-  R_=0.15;
-  omega_= 3;
+  R_=0.25;
+  omega_= 2.0;
   init_ = false;
-
+  // jacobian = rbd::Jacobian(robot().mb(), "end_effector_link");
   postureTask = std::make_shared<mc_tasks::PostureTask>(solver(), robot().robotIndex(), 5, 1);
   // postureTask->stiffness(3);
   // postureTask->damping(5);
   solver().addTask(postureTask);
 
 
-  circularTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 20.0, 10000);
+  circularTask = std::make_shared<mc_tasks::EndEffectorTask>(robot().frame("tool_frame"), 60.0, 10000);
   Eigen::VectorXd dimweight(6); 
   dimweight << 1., 1., 1., 1., 1., 1. ; 
   circularTask -> dimWeight(dimweight);
@@ -66,10 +66,17 @@ CartesianMovingController::CartesianMovingController(mc_rbdyn::RobotModulePtr rm
 bool CartesianMovingController::run()
 { 
   ctlTime_ += timeStep;
+
   if (ctlTime_ > 3) {init_=true; datastore().assign<std::string>("ControlMode", "Torque");}
-  if (ctlTime_ > 7.2) {start_moving_=true; postureTask->stiffness(0); postureTask->damping(5);}
+  // if (ctlTime_ > 3) {init_=true;}
+
+  if (ctlTime_ > 6.00) { 
+    circularTask->positionTask->position(Eigen::Vector3d(0.60, 0, 0.25 + R_));
+  }
+  if (ctlTime_ > 9.4) {start_moving_=true;}
+  // if (ctlTime_ > 20) {datastore().assign<std::string>("Coriolis", "no");}
   if (start_moving_ && init_) { 
-    circularTask->positionTask->position(Eigen::Vector3d(0.55, R_*std::sin(omega_*ctlTime_), 0.4 + R_*std::cos(omega_*ctlTime_))),
+    circularTask->positionTask->position(Eigen::Vector3d(0.60, R_*std::sin(omega_*ctlTime_), 0.25 + R_*std::cos(omega_*ctlTime_))),
     circularTask->positionTask->refVel(Eigen::Vector3d(0, R_*omega_*std::cos(omega_*ctlTime_), -R_*omega_*std::sin(omega_*ctlTime_))),
     circularTask->positionTask->refAccel(Eigen::Vector3d(0, -R_*R_*omega_*std::sin(omega_*ctlTime_), R_*R_*omega_*std::cos(omega_*ctlTime_))), 
     circularTask->orientationTask->orientation(Eigen::Quaterniond(0, 1, 0, 1).normalized().toRotationMatrix());}
